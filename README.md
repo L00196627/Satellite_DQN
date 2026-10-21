@@ -1,6 +1,6 @@
 # COSMOS with DQN-Based Task Placement
 
-This repository extends **COSMOS (Computing, Orbit, Satellite Modeling and Simulation)** with an experimental **Deep Q-Network (DQN)** task-placement policy for Satellite Edge Computing (SEC).
+This repository extends **COSMOS (Computing, Orbit, Satellite Modeling and Simulation)** with an experimental **Deep Q-Network (DQN)** task placement policy for Satellite Edge Computing (SEC).
 
 COSMOS is a Python/SimPy discrete-event simulator for Low Earth Orbit (LEO) satellite edge computing. It models dynamic Starlink-based satellite topologies, Satellite Edge Nodes (SENs), task generation, queuing, energy consumption, inter-satellite routing, and multiple task-placement strategies.
 
@@ -65,17 +65,10 @@ After a target SEN is selected, the normal COSMOS task-assignment and execution 
 
 ### `main.py`
 
-Main entry point for the simulator.
 
-It is responsible for:
-
-- loading `config.json5`
-- creating the SimPy environment
-- building or loading satellite configurations
-- creating SENs and other simulation objects
-- starting task generation
-- running the simulation
-- collecting and saving results
+serves as the main driver for the LEO Satellite Edge Computing simulation.
+It integrates discrete-event simulation (SimPy) with orbital mechanics (Skyfield) and
+optimization logic (ILP/Heuristics) to evaluate task offloading performance.
 
 Run the project with:
 
@@ -87,18 +80,9 @@ python main.py
 
 ### `simulation.py`
 
-Contains the main task lifecycle and scheduling logic.
 
-Important responsibilities include:
-
-- stochastic task generation
-- candidate SEN evaluation
-- task placement
-- CPU and network queue simulation
-- task execution
-- energy consumption
-- forwarding/offloading
-- recording task outcomes
+contains the primary SimPy processes that drive the simulation's
+operational phase. It handles the lifecycle of tasks from generation to completion.
 
 The `SearchNode` configuration determines which placement strategy is used.
 
@@ -118,16 +102,11 @@ else:
 
 ### `EdgeServer.py`
 
-Represents a Satellite Edge Node.
+defines the `EdgeServer` class, which represents a Low Earth Orbit (LEO) satellite
+acting as an edge computing node within the simulation environment.
 
-Each SEN maintains information such as:
-
-- processing resources
-- task queues
-- energy
-- neighbours
-- network information
-- orbital information
+The module integrates discrete event simulation (SimPy) with orbital mechanics (Skyfield)
+to simulate a dynamic satellite network.
 
 The scheduling policy chooses an `EdgeServer`; the server then participates in the normal task execution process.
 
@@ -135,15 +114,12 @@ The scheduling policy chooses an `EdgeServer`; the server then participates in t
 
 ### `ILP_simulation.py`
 
-Integration layer between COSMOS and the ILP optimisation model.
+implements the logic for assigning and executing tasks within a satellite
+network using an optimization-based approach (ILP).
 
-It:
+It handles the lifecycle of a task from the decision phase (searching for the best node)
+to the execution phase (CPU processing and Network transmission).
 
--  reads the current COSMOS/SEN state
--  converts that state into an ILP-compatible snapshot
--  calls the ILP solver
--  maps the solver result back to a COSMOS SEN
--  continues task assignment
 
 The underlying optimisation formulation is implemented primarily in:
 
@@ -159,25 +135,7 @@ The DQN implementation is deliberately separated into small components.
 
 ### `DQN_data_Translator.py`
 
-Converts live COSMOS scheduling information into a fixed-size numeric state that the neural network can process.
-
-The current state contains:
-
-- CPU waiting time
-- network waiting time
-- transfer time
-- orbital sunset information
-- elevation angle
-- expected completion time
-- remaining energy
-- candidate-presence flag
-
-It contains this information for each candidate SEN, plus task-level information such as:
-
-- CPU requirement
-- deadline
-- data size
-- bandwidth
+Converts live COSMOS scheduling information into a fixed-size numeric state for the neural network. For each candidate SEN, it includes CPU and network waiting time, transfer time, orbital sunset, elevation angle, expected completion time, energy, and whether the candidate exists. It also includes task information such as CPU requirement, deadline, data size, and bandwidth.
 
 The current design supports up to **50 candidate SENs**.
 
@@ -200,19 +158,7 @@ Unused candidate positions are padded and masked so that the DQN cannot select t
 
 ### `DQN_agent.py`
 
-Contains the reinforcement-learning components.
-
-The current DQN implementation includes:
-
-- policy network
-- target network
-- replay memory
-- epsilon-greedy action selection
-- Bellman target calculation
-- replay-based training
-- soft target-network updates
-
-The network takes the current state and produces one Q-value for each possible candidate slot.
+Contains the core reinforcement-learning logic, including the policy and target networks, replay memory, action selection, and training updates. The network receives the current state and outputs a Q-value for each possible candidate SEN.
 
 
 The core DQN structure follows the official PyTorch reinforcement-learning tutorial, with COSMOS-specific state translation and action masking added for satellite task placement.
@@ -225,15 +171,7 @@ https://docs.pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
 ### `DQN_test.py`
 
-Development test for the DQN pipeline.
-
-It uses fake candidate/task data to verify that:
-
-- the state translator produces the expected input size
-- the action mask is valid
-- the DQN can select an action
-- experiences can be stored in replay memory
-- a training step can execute
+A development test for the DQN pipeline that uses sample task and candidate data to check that state creation, action masking, action selection, replay memory, and training all work correctly.
 
 It is **not** a COSMOS performance experiment and its rewards/loss values should not be treated as dissertation results.
 
@@ -407,14 +345,14 @@ python main.py
 
 This may take considerably longer than a normal simulation run. Please allow 1 to 2 hours for the data to be generated. 
 
-After the configuration files have been generated, switch to:
+After the data files have been generated, switch to:
 
 ```json5
 Build_Configurations: false,
 Load_Configuration: true
 ```
 
-The saved configurations can then be reused for later experiments.
+The saved data can then be reused for later experiments.
 
 ---
 
@@ -480,14 +418,8 @@ result/
 
 directory.
 
-COSMOS creates parameter-specific output folders containing files such as:
+COSMOS creates parameter-specific output folders containing CSV files like summary, Per task results and simulation results and energy statistics. 
 
-- summary CSV files
-- per-task result CSV files
-- simulation result CSV files
-- energy statistics
-
-These outputs can be compared between ERT, ILP and DQN runs.
 
 ---
 
