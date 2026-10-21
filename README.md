@@ -281,7 +281,7 @@ python find_max_candidates.py
 ---
 
 ## Repository Structure
-# *It should be noted that the 'data' and 'result' folders are generated after the simulator has ran. 
+> *It should be noted that the 'data' and 'result' folders are generated after the simulator has ran. 
 
 ```text
 COSMOS/
