@@ -27,7 +27,7 @@ Routing is treated separately from task placement. For controlled experiments, t
 
 ---
 
-## High-Level Architecture
+##  Architecture layout
 
 ```text
 main.py
@@ -67,7 +67,7 @@ After a target SEN is selected, the normal COSMOS task-assignment and execution 
 
 
 serves as the main driver for the LEO Satellite Edge Computing simulation.
-It integrates discrete-event simulation (SimPy) with orbital mechanics (Skyfield) and
+It integrates discrete event simulation (SimPy) with orbital mechanics (Skyfield) and
 optimization logic (ILP/Heuristics) to evaluate task offloading performance.
 
 Run the project with:
