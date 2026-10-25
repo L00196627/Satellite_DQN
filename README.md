@@ -29,13 +29,13 @@ Routing is treated separately from task placement. For controlled experiments, t
 
 ##  Architecture layout
 
-```text
 main.py
    |
    |-- loads configuration
    |-- builds/loads topology
    |-- creates the simulation environment
    |-- starts task generation
+   |-- loads/saves DQN model when DQN is selected
    |
    v
 simulation.py
@@ -50,12 +50,27 @@ simulation.py
    |                  |
    |                  +----> sec_ilp_snapshot_v3.py
    |
-   +---- DQN ----> DQN_data_Translator.py
+   +---- DQN ----> DQN_simulation.py
+                     |
+                     |-- gathers COSMOS task/candidate data
+                     |-- manages task execution and rewards
+                     |-- manages pending transitions
+                     |
+                     +----> DQN_data_Translator.py
+                     |         |
+                     |         +----> builds normalized DQN state
+                     |         +----> builds valid action mask
                      |
                      +----> DQN_agent.py
-                              |
-                              +----> chosen SEN
-```
+                               |
+                               |-- selects action
+                               |-- stores replay experiences
+                               |-- trains policy network
+                               |
+                               +----> chosen SEN
+                                         |
+                                         v
+                              normal COSMOS task execution
 
 After a target SEN is selected, the normal COSMOS task-assignment and execution logic continues.
 
@@ -156,6 +171,18 @@ Unused candidate positions are padded and masked so that the DQN cannot select t
 
 ---
 
+### `DQN_simulation.py`
+
+Acts as the integration layer between COSMOS and the DQN. It manages the interaction between live simulation data, DQN decision-making, normal COSMOS task execution, and the reward returned to the learning system.
+
+This module collects the current task and candidate SEN information, passes this data to `DQN_data_Translator.py`, requests an action from `DQN_agent.py` and maps the selected action to a real candidate SEN. The chosen SEN is then used by the normal COSMOS simulation logic.
+
+After execution, the task outcome is converted into a reward. Because tasks can overlap and may complete out of order, the module maintains pending transitions until the required reward and next-state information are available. Once a transition is complete, it is added to replay memory and used for DQN training.
+
+`DQN_simulation.py` therefore provides the connection between the event-driven COSMOS simulator and the standard DQN learning process.
+
+---
+
 ### `DQN_agent.py`
 
 Contains the core reinforcement-learning logic, including the policy and target networks, replay memory, action selection, and training updates. The network receives the current state and outputs a Q-value for each possible candidate SEN.
@@ -175,11 +202,6 @@ A development test for the DQN pipeline that uses sample task and candidate data
 
 It is **not** a COSMOS performance experiment and its rewards/loss values should not be treated as dissertation results.
 
-Run it with:
-
-```bash
-python DQN_test.py
-```
 
 ---
 
@@ -187,72 +209,9 @@ python DQN_test.py
 
 Utility used to determine the maximum candidate-set size found in the saved COSMOS topology data. This data can be obtained by running the simulator. 
 
-A scheduling candidate set consists of:
-
-```text
-current SEN + directly connected neighbours
-```
-
-The scan observed:
-
-```text
-Maximum Access Point candidate count: 50
-Maximum candidate count for any SEN: 51
-```
-
-The current DQN uses:
-
-```python
-MAX_CANDIDATES = 50
-```
-
-because the current placement decision begins from an Access Point SEN.
+The scan observed that there was a maximum candidate count of 50, with 51 including the current SEN. Therefore the max candidates variable is set at 50. 
 
 If DQN scheduling is later allowed to begin from arbitrary forwarded SENs, this value should be reviewed.
-
-Run with:
-
-```bash
-python find_max_candidates.py
-```
-
----
-
-## Repository Structure
-> *It should be noted that the 'data' and 'result' folders are generated after the simulator has ran. 
-
-```text
-COSMOS/
-- main.py
-- simulation.py
--  EdgeServer.py
--  Task.py
--  Satellite.py
--  Observer.py
--  topology.py
--  routing_Manager.py
-- simulation_OGM.py
--  Ogm.py
-- packet.py
--  globals.py
--  utils.py
-
-- ILP_simulation.py
--  sec_ilp_snapshot_v3.py
-
--  DQN_data_Translator.py
-- DQN_agent.py
-- DQN_test.py
--  find_max_candidates.py
-
--  config.json5
--  img_resolution.json5
--  requirements.txt
-
--  data/
--  result/
-```
-
 
 
 ---
@@ -315,7 +274,7 @@ request_distribution: {
 },
 
 AP_selection: "optimal",
-SearchNode: "ERT",
+SearchNode: "DQN",
 
 Routing_algorithm: {
     BATMAN: false,
@@ -372,51 +331,14 @@ python main.py
 
 This uses the existing heuristic scheduling path in `simulation.py`.
 
----
 
-## Running the ILP Policy
-
-Set:
-
-```json5
-SearchNode: "ILP"
-```
-
-Then run:
-
-```bash
-python main.py
-```
-
-COSMOS will route SearchNode decisions through `ILP_simulation.py` and the ILP solver.
-
----
-
-## Running the DQN Policy
-
-(Not yet finished) . Once DQN integration is enabled in `simulation.py` and recognised by `main.py`, set:
-
-```json5
-SearchNode: "DQN"
-```
-
-The intended flow is:
-
-```text
-real COSMOS candidate data >  DQN_data_Translator.py > DQN_agent.py > selected action > candidate SEN > normal COSMOS task execution
-```
 
 ---
 
 ## Output
 
-Simulation results are written to the:
+Simulation results are written to the result/ directory.
 
-```text
-result/
-```
-
-directory.
 
 COSMOS creates parameter-specific output folders containing CSV files like summary, Per task results and simulation results and energy statistics. 
 
