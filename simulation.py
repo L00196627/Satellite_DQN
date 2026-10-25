@@ -26,6 +26,8 @@ import experiments
 from Task import Task
 import ILP_simulation
 
+import DQN_simulation
+
 hop = 0  # Initialize the variable `hop` to zero
 
 config = globals.config
@@ -580,17 +582,26 @@ def task(env, task_id, server, initial_server_counter, different_server_counter,
     if policy == "ILP":
         print(f"--- [{env.now:.2f}] Task {task_id} using SearchNode Policy: v2_ilp_hybrid ---")
         yield from ILP_simulation.SearchNode_ILP_Hybrid_v2(*search_node_args)
+
+    elif policy == "DQN":
+        yield from DQN_simulation.SearchNode_DQN_v1(
+            *search_node_args
+        )
+
     else:
         if policy != "ERT":
             print(
-                f"--- [{env.now:.2f}] Task {task_id} WARNING: Unknown policy '{policy}'. Defaulting to v1_heuristic ---")
+                f"--- [{env.now:.2f}] Task {task_id} WARNING: "
+                f"Unknown policy '{policy}'. Defaulting to v1_heuristic ---"
+            )
+
         print(f"--- [{env.now:.2f}] Task {task_id} using SearchNode Policy: v1_heuristic ---")
         yield from SearchNode_Heuristic_v1(*search_node_args)
 
 
 def generate_tasks(env, initial_server_counter, different_server_counter, other_server_counter):
     global arrival_time
-    print('Genero i task')
+    print('Generate tasks')
 
     task_id = 1
     while True:

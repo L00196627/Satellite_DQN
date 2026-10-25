@@ -34,14 +34,14 @@ def sendTask(env, task, sender, receiver, algorithm):
         implement the required attributes and methods.
     """
     if task.ttl > 0:
-        # Gestione dell'attesa nell'env
+        # Wait Management in the Env
         if receiver.name != 'OBS':
             #bandwidth = sender.bandwidth[receiver] * (1024**2)  # da MB/s a Byte/s
             bandwidth = globals.rnd.randint(globals.config["available_bandwidth"]["min"], globals.config["available_bandwidth"]["max"])
             bandwidth = bandwidth * (1024 ** 2) if bandwidth is not None else 0.0
 
             trasmission_time = getTransmissionTime(bandwidth, task.weight, sender.latency[receiver])
-            print(f"[{task.id}][{algorithm}] {sender.name} -> {receiver.name} | Tramission-time: {trasmission_time}")
+            print(f"[{task.id}][{algorithm}] {sender.name} -> {receiver.name} | Transmission-time: {trasmission_time}")
 
             energy_tx = sender.compute_routing_energy(task.weight, bandwidth)
             sender.energy -= energy_tx
@@ -53,30 +53,30 @@ def sendTask(env, task, sender, receiver, algorithm):
             bandwidth = bandwidth * (1024 ** 2) if bandwidth is not None else 0.0
 
             trasmission_time = getTransmissionTime(bandwidth, task.weight, 0)
-            print(f"[{task.id}][{algorithm}] CONSEGNATO! {sender.name} -> {receiver.name} | Tramission-time: {trasmission_time}")
+            print(f"[{task.id}][{algorithm}] DELIVERED! {sender.name} -> {receiver.name} | Transmission-time: {trasmission_time}")
 
         task.hop += 1
         task.ttl -= 1   
         
-        task.add_algorithm(algorithm)       # Contiamo quale algoritmo abbiamo usato
+        task.add_algorithm(algorithm)       # Let's figure out which algorithm we used
         
-        sender.tasks.remove(task)           # Rimuoviamo il task dal Sender
+        sender.tasks.remove(task)           # Let's remove the task from the Sender
         yield env.timeout(trasmission_time)
         
-        receiver.tasks.append(task)         # Inviamo il task al Receiver
+        receiver.tasks.append(task)         # We send the task to the Receiver
         
-        task.current_node = receiver.name   # Modifichiamo le informazioni sul task
+        task.current_node = receiver.name   # Let's edit the task information
 
         if task.dest_node == receiver.name:
             task.arrived = True
             task.label = 'TASK_ARRIVED'
 
-        #task.hop_History.append(receiver.name)     # Aggiorno la History
-        task.visited.add(receiver.name)            # Aggiorno i visitati
+        #task.hop_History.append(receiver.name)     #  updating the History
+        task.visited.add(receiver.name)            # updating the visited pages
 
     else:
-        # Rimuoviamo il task
-        print(f"[{task.id}] RIMOZIONE TASK DA {sender.name}, TTL finito")
+        # Let's remove the task
+        print(f"[{task.id}] REMOVE TASK FROM {sender.name}, TTL finito")
         task.label = 'TTL_EXPIRED'
         sender.dead_tasks.append(task)
         sender.tasks.remove(task)
@@ -87,14 +87,14 @@ def getTransmissionTime(bandwidht, weight, latency):
 
 def colorize(text: str, color: str) -> str:
     """
-    Colora una stringa con i codici ANSI per il terminale.
+    Colors a string using ANSI codes for the terminal.
 
     Args:
-        text (str): La stringa da colorare.
-        color (str): Il colore (es: "red", "green", "yellow", "blue", "magenta", "cyan", "white").
+        text (str): The string to color.
+        color (str): The color (e.g., “red”, “green”, “yellow”, “blue”, “magenta”, ‘cyan’, “white”).
 
     Returns:
-        str: La stringa colorata con codici ANSI.
+        str: The string colored using ANSI codes.
     """
     colors = {
         "black": "\033[30m",

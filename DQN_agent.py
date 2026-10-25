@@ -1,3 +1,18 @@
+"""
+Contains the core reinforcement-learning logic, including the policy and target networks,
+replay memory, action selection, and training updates.
+The network receives the current state and outputs a Q-value for each possible candidate SEN.
+
+The core DQN structure follows the official PyTorch reinforcement learning tutorial,
+ with COSMOS specific state translation and action masking added for satellite task placement.
+
+ https://docs.pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+
+"""
+
+
+
+
 import math
 import random
 from collections import namedtuple, deque
@@ -95,13 +110,15 @@ loss_fn = nn.SmoothL1Loss()
 
 steps_done = 0
 
-
+# uses what the network has learned to choose a SEN
 def select_action(state, valid_action_mask):
 
     global steps_done
-
+    # generate a random value used for epsilon-greedy action selection
     sample = random.random()
 
+    # calculate the current exploration rate
+    # epsilon gradually decreases as more decisions are made
     eps_threshold = (
         EPS_END
         + (EPS_START - EPS_END)
@@ -109,7 +126,7 @@ def select_action(state, valid_action_mask):
     )
 
     steps_done += 1
-
+    # find the action indexes that correspond to valid candidate SENs
     valid_actions = [
         i
         for i, valid in enumerate(valid_action_mask)
@@ -118,13 +135,13 @@ def select_action(state, valid_action_mask):
 
     if not valid_actions:
         raise ValueError("No valid DQN actions are available.")
-
+    # use the policy network to select the best action
     if sample > eps_threshold:
 
         state = torch.FloatTensor(state).unsqueeze(0).to(device)
-
+        # gradients are not needed when only selecting an action
         with torch.no_grad():
-
+            # mask invalid or padded candidate actions
             q_values = policy_net(state)
 
             mask = torch.BoolTensor(
@@ -132,14 +149,15 @@ def select_action(state, valid_action_mask):
             ).to(device)
 
             q_values[0, ~mask] = float("-inf")
-
+            # select the valid action with the highest predicted Q-value
             return q_values.max(1).indices.item()
 
     else:
 
         return random.choice(valid_actions)
 
-
+# train the DQN using a random batch of past experiences
+# stored in replay memory
 def replay():
 
     if len(memory) < BATCH_SIZE:
@@ -184,7 +202,7 @@ def replay():
 
     return loss.item()
 
-
+# updates target network to follow policy network
 def update_target_network():
 
     target_net_state_dict = target_net.state_dict()
@@ -197,3 +215,45 @@ def update_target_network():
         )
 
     target_net.load_state_dict(target_net_state_dict)
+# saves learned information for subsequent training
+def save_model(filename="dqn_model.pth"):
+    torch.save({
+        "policy_net": policy_net.state_dict(),
+        "target_net": target_net.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "steps_done": steps_done
+    }, filename)
+
+    print(f"[DQN] Model saved to {filename}")
+
+
+def load_model(filename="dqn_model.pth"):
+    global steps_done
+    # try to load a previously saved DQN checkpoint
+    # map_location ensures the model is loaded onto the current device
+    try:
+        checkpoint = torch.load(
+            filename,
+            map_location=device
+        )
+    except FileNotFoundError:
+        print("[DQN] No saved model found. Starting new model.")
+        return
+    # restore the learned weights of the main policy network
+    policy_net.load_state_dict(
+        checkpoint["policy_net"]
+    )
+    # restore the target network weights used during DQN training
+    target_net.load_state_dict(
+        checkpoint["target_net"]
+    )
+    # restore the optimizer state so training can continue normally
+    optimizer.load_state_dict(
+        checkpoint["optimizer"]
+    )
+
+    # restore the number of action-selection steps completed so far
+    # this keeps the epsilon-decay schedule consistent across runs
+    steps_done = checkpoint["steps_done"]
+
+    print(f"[DQN] Model loaded from {filename}")

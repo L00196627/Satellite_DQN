@@ -20,14 +20,14 @@ from routing_Manager import print_dict, manage_ogm_test, saveInfoInFile
 from enums import AccPointMode, GenConfigsOutput, tle_data
 from utils import colorize 
 
-# Converti il tempo in UTC e formatta
-time_top = datetime.now(timezone.utc)  # O il tuo oggetto datetime
+# Convert the time to UTC and format it
+time_top = datetime.now(timezone.utc)  # Or your datetime object
 
-# Leggi il file di configurazione JSON
+# Read the JSON configuration file
 config = globals.config
 
-# Gestione thread
-lock = threading.Lock()  # Meccanismo di lock
+# Thread Management
+lock = threading.Lock()  # Lock mechanism
 
 
 def compute_distances_from_target_sw(sat, closerServer_Sorted, t):
@@ -62,7 +62,7 @@ def create_topology_dome(env, time=get_current_time()):
 
     print(f"TIME: {time.utc_strftime('%Y-%m-%d %H:%M:%S')}\n")
     print(
-        f"Satelliti Considerati TOT: {num_sat_buffer + num_sat_dome + num_AP} AP: {num_AP} DOME: {num_sat_dome} BUFF: {num_sat_buffer} \n")
+        f"Satellites Classified as TOT: {num_sat_buffer + num_sat_dome + num_AP} AP: {num_AP} DOME: {num_sat_dome} BUFF: {num_sat_buffer} \n")
     tmp_sat = satellites_dome + satellites_buffer
 
     # Access Point Edge Servers
@@ -71,15 +71,15 @@ def create_topology_dome(env, time=get_current_time()):
         edge_server = EdgeServer(env, server_id, acc_point[k][0])
         edge_servers.append(edge_server)
 
-    globals.global_access_point = edge_servers.copy()  # Salvo i nuovi access point globali
+    globals.global_access_point = edge_servers.copy()  # Except for the new global access points
 
-    # Tutti i satelliti nella cupola
+    # All the satellites in the dome
     for i in range(0, num_sat_dome + num_sat_buffer):
         server_id = f"{tmp_sat[i][0].name}"
         edge_server = EdgeServer(env, server_id, tmp_sat[i][0])
         edge_servers.append(edge_server)
 
-    # Calcola i vicini di ogni server
+    # Calculate the neighbors of each server
     for i in range(len(edge_servers)):
         current_server = edge_servers[i]
         neighbor = compute_distances_from_target_sw(current_server, edge_servers, time)
@@ -135,7 +135,7 @@ def find_satellite_events(satellite, t0):
         }
 
         if time_until_set > 1000:
-            print("ATTENZIONE")
+            print("ATTENTION")
 
 
     return life
@@ -143,9 +143,9 @@ def find_satellite_events(satellite, t0):
 
 def print_progress_bar(current_step, total_steps, bar_width=40, prefix="Avanzamento"):
     """
-    Stampa una barra di progresso aggiornata sulla stessa riga.
-    current_step: 1-based index della iterazione corrente
-    total_steps: numero totale di step
+    Print an updated progress bar on the same line.
+    current_step: 1-based index of the current iteration
+    total_steps: total number of steps
     """
     if total_steps <= 0:
         return
@@ -158,15 +158,15 @@ def print_progress_bar(current_step, total_steps, bar_width=40, prefix="Avanzame
 def load_saved_configuration(mode:AccPointMode) -> GenConfigsOutput:
     path = f"data/configurations_AP_{mode}.json"
     configuration = None
-    print(colorize(f"[LOAD] Caricamento configurazione <{mode}>...", "yellow"))
+    print(colorize(f"[LOAD] Loading configuration <{mode}>...", "yellow"))
     
     try: 
         with open(path, "r") as f:
             configuration = json.load(f)
     except Exception as e:
-        sys.exit(colorize(f"[LOAD] Errore durante il caricamento delle configurazioni: {e}", "red"))
+        sys.exit(colorize(f"[LOAD] Error while loading configurations: {e}", "red"))
     
-    print(colorize(f"[LOAD] Configurazione <{mode}> caricata con successo.", "green"))
+    print(colorize(f"[LOAD] Configuration <{mode}> Uploaded successfully.", "green"))
     return configuration
 
 def build_configurations(t0: Time, tle_data : tle_data, mode: AccPointMode) -> GenConfigsOutput:
@@ -292,14 +292,14 @@ def periodic_recall_Topology_monitor(env, data_configurations, OGMs_tables):
         
         print("-" * 70)
         print(f"\t||TIME IN SIMULATION : (seconds:{env.now}) (minutes: {env.now // 60}) ||\n")
-        print("MODIFICA CONFIGURAZIONE IN CORSO...\n")
+        print("UPDATING CONFIGURATION...\n")
         
         if OGMs_tables:
             new_edge_servers, new_global_access_point = loadConfiguration(env, data_configurations, OGMs_tables)
         else:
             new_edge_servers, new_global_access_point = loadConfiguration_simple(env, data_configurations)
             
-        # ! Aggiorno le Globali
+        # ! updating the global variables
         with lock:
             globals.global_access_point = new_global_access_point
             globals.edge_servers = new_edge_servers
@@ -312,11 +312,11 @@ def periodic_recall_Topology_monitor(env, data_configurations, OGMs_tables):
 def distribute_ogm(env, data_configuration, config_riempimento):
     
     while True:
-        # Avvisa quando si è sull'ultimo elemento della configurazione
+        # Notifies you when you reach the last item in the configuration
         if globals.config_index >= len(data_configuration["configurations"]) - 1:
-            print(f"---!!!Raggiunto ultimo elemento di data_configuration (index {globals.config_index})")
+            print(f"---!!!Reached the last element of `data_configuration` (index {globals.config_index})")
         else:
-            print(f"---Caricamento configurazione index {globals.config_index}")
+            print(f"---Loading configuration index {globals.config_index}")
 
         new_edge_servers, new_global_access_point = loadConfiguration_simple(env, data_configuration)  # Carica la configurazione
         
@@ -332,7 +332,7 @@ def distribute_ogm(env, data_configuration, config_riempimento):
         ogm_table_snapshot, position_dict = None, None
         at = timedelta(seconds=time_section)
 
-        # 1) Fase di Redistribuzione
+        # 1) Redistribution Phase
         for i in range(num_redistributions):
             new_instant = ts.utc(globals.ist_in_conf.utc_datetime() + at)
             at += timedelta(seconds=time_section)
@@ -340,30 +340,30 @@ def distribute_ogm(env, data_configuration, config_riempimento):
             print(f"\tOGMS REDISTRIBUTION {i+1}/{num_redistributions} on : {new_instant.utc_iso(places=6)}")
             ogm_table_snapshot = manage_ogm_test(ogm_map, new_instant)
         
-        # 2) Fase di Salvataggio
+        # 2) Rescue Phase
         if globals.config_index >= config_riempimento:
             
             ogm_table_path = f'data/OGMs_table.json'
             new_index = globals.config_index - config_riempimento
             saveInfoInFile(ogm_table_path, ogm_table_snapshot, new_index)
 
-        # Caricamento Configurazione Successiva
+        # Loading... Next Configuration
         globals.config_index += 1  
         yield env.timeout(config["Interval_between_Configurations_in_seconds"])
 
 
 def update_counters_dictionary(all_server, initial_server_counter, different_server_counter, other_server_counter):
     """
-    Aggiunge nuovi server ai dizionari dei contatori o li inizializza.
+  Adds new servers to the counter dictionaries or initializes them.
 
     Args:
-        edge_servers (list): Lista attuale di server.
-        initial_server_counter (dict): Dizionario per il contatore iniziale dei server.
-        different_server_counter (dict): Dizionario per il contatore dei server diversi.
-        other_server_counter (dict): Dizionario per il contatore degli altri server.
+        edge_servers (list): Current list of servers.
+        initial_server_counter (dict): Dictionary for the initial server counter.
+        different_server_counter (dict): Dictionary for the distinct server counter.
+        other_server_counter (dict): Dictionary for the other servers counter.
 
     Returns:
-        None: Aggiorna i dizionari in-place.
+        None: Updates the dictionaries in-place.
     """
     for server_name in all_server:
         if server_name not in initial_server_counter:
@@ -376,30 +376,30 @@ def update_counters_dictionary(all_server, initial_server_counter, different_ser
 
 def update_servers(new_servers, acc_point):
     """
-    Aggiorna i server esistenti o aggiunge nuovi server se non presenti.
+    Updates existing servers or adds new servers if none exist.
 
     Args:
-        edge_servers (list): Lista di server esistenti (da mantenere).
-        new_servers (list): Lista di nuovi server dalla nuova configurazione.
+        edge_servers (list): List of existing servers (to be retained).
+        new_servers (list): List of new servers from the new configuration.
 
     Returns:
-        dict: Dizionario aggiornato dei server.
+        dict: Updated dictionary of servers.
     """
 
-    # Crea un dizionario per i server esistenti basato sul nome
+    # Create a dictionary for existing servers based on their names
     old_servers = {server.name: server for server in globals.edge_servers}
     new_servers = {server.name: server for server in new_servers}
     
-    # Dizionari per i risultati
+    # Dictionaries for the results
     intersection = {name: server for name, server in old_servers.items() if
-                    name in new_servers}  # Servers nell'intersezione
+                    name in new_servers}  # Servers at the intersection
     
-    #Aggiorno gli attributi dell'intersezione
+    #update the attributes of the intersection
     for name, server in intersection.items():
         server.elev_angle = new_servers[name].elev_angle
         server.orbitalSunset = new_servers[name].orbitalSunset
 
-    # Aggiorno i riferimenti degli acc_point flags
+    # updating the references for the acc_point flags
     for name, server in intersection.items():
         if server.name in acc_point:
             server.is_acc_point = True
@@ -409,17 +409,17 @@ def update_servers(new_servers, acc_point):
     A = {name: server for name, server in old_servers.items() if name not in new_servers}  # Server che sono tramontati
     B = {name: server for name, server in new_servers.items() if name not in old_servers}  # Server che sono appena sorti
 
-    # Stampa i server che sono tramontati
+    # Print the servers that have set
     #for name, server in A.items():
-        #print(f"Server tramontato: {name}, angle:{server.elev_angle} ,Orbital Sunset: {server.orbitalSunset} (sec)")
+        #print(f“Server set: {name}, angle:{server.elev_angle}, Orbital Sunset: {server.orbitalSunset} (sec)”)
 
-    # Stampa i server che sono appena sorti
+    # Print servers that have just risen
     #for name, server in B.items():
-        #print(f"Server appena sorto: {name}, angle:{server.elev_angle} ,Orbital Sunset: {server.orbitalSunset}")
+        #print(f“Server just risen: {name}, angle:{server.elev_angle}, Orbital Sunset: {server.orbitalSunset}”)
 
-    # Stampa i server nell'intersezione
+    # Print servers in the intersection
     #for name, server in intersection.items():
-        #print(f"Server aggiornato: {name}, angle:{server.elev_angle} ,Orbital Sunset: {server.orbitalSunset}")
+        #print(f“Updated server: {name}, angle:{server.elev_angle} ,Orbital Sunset: {server.orbitalSunset}”)
 
     return intersection, A, B
 
@@ -439,9 +439,9 @@ def update_servers_neighbors(servers_dict, neighbors_SAT):
     3. For each server, it creates dictionaries for hop_neighbors, latency, and bandwidth.
     4. Updates each server's neighbors using the update_neighbors method with the constructed dictionaries.
     """
-    servers_updated_neighbors = {}  # Dizionario per i server con i vicini aggiornati
+    servers_updated_neighbors = {}  # Dictionary for servers with updated neighbors
 
-    # Costruzione del dizionario per salvare le informazioni dei server e dei loro vicini
+    # Building a dictionary to store information about servers and their neighbors
     for k, v in servers_dict.items():
         neighbor, neighbors = {}, []
         for neighbor in neighbors_SAT[k]:
@@ -456,7 +456,7 @@ def update_servers_neighbors(servers_dict, neighbors_SAT):
             "neighbors": neighbors
         }
 
-    # Inserisco i vicini per ogni Edge_server
+    # I enter the neighbors for each Edge_server
     for name, server in servers_dict.items():
         hop_neighbors, latency, bandwidth = {}, {}, {}
         info = servers_updated_neighbors[name]
@@ -467,54 +467,54 @@ def update_servers_neighbors(servers_dict, neighbors_SAT):
             bandwidth[neighbor['server']] = globals.rnd.uniform(config["available_bandwidth"]["min"],
                                                            config["available_bandwidth"]["max"])
 
-            # Aggiungo i dizionari riguardanti i vicini ai rispettivi server
+            # adding the dictionaries related to the neighbors to their respective servers
         server.update_neighbors(hop_neighbors, latency, bandwidth)
 
     return servers_dict
 def loadConfiguration_simple(env, data_configurations):
     """
-    Funzione identica a loadConfiguration ma non ha dipendenze dai file degli OGM_table e positions_Vectors.
-    Costruisce le configurazioni satellitari usando solamente il file 'configurations.json'
+    This function works the same as `loadConfiguration` but does not depend on the `OGM_table` and `positions_Vectors` files.
+    It builds satellite configurations using only the ‘configurations.json’ file.
     """
-    global_access_point = []    # futuri acc_points
+    global_access_point = []    # future acc_points
     if globals.config_index > 0:
         #print("#" * 30)
         configuration = data_configurations["configurations"][globals.config_index]
     
         globals.ist_in_conf = string_to_skyfield_time(configuration["time"])
 
-        print("Aggiornato il Tempo Globale: ", globals.ist_in_conf.utc_strftime('%Y-%m-%d %H:%M:%S'))
+        print("Global Time Updated: ", globals.ist_in_conf.utc_strftime('%Y-%m-%d %H:%M:%S'))
         #print(f'Conf: {globals.config_index} | time : {configuration["time"]}')
 
-        # Costruisci i nuovi server dalla configurazione
+        # Build the new servers based on the configuration
         new_servers, new_neighbors, acc_point = build_EdgeServer_from_config(env, configuration)
 
-        # Aggiorna i server esistenti o aggiunge nuovi server se non presenti.
+        # Update existing servers or add new servers if none exist.
         intersection, old_edge_servers, new_edge_servers = update_servers(new_servers, acc_point)
 
         server = {**intersection, **new_edge_servers}
         
         update_counters_dictionary(server, globals.initial_server_counter,
-                                   globals.different_server_counter, globals.other_server_counter)  # Aggiorno i dizionari dei nuovi aggiunti
+                                   globals.different_server_counter, globals.other_server_counter)  #  updating the dictionaries with the new additions
 
-        # Stampa per debug
+        # Debug output
         #print(f"Configurazione aggiornata. Totale server: {len({**intersection, **new_edge_servers, **old_edge_servers})}")
 
-        # Aggiorno i vicini
+        # let the neighbors know
         servers_in_dome_updated = update_servers_neighbors({**intersection, **new_edge_servers},
-                                                           new_neighbors)  # Aggiorno i vicini per i server nell'intersection e i nuovi aggiunti
-        # Pulisco i dizionari che riguardano i vicini dei server tramontati
+                                                           new_neighbors)  # updating the neighbors for the servers at the intersection and the newly added ones
+        # cleaning up the dictionaries related to the neighbors of the decommissioned servers
         for server in old_edge_servers.values():
             server.update_neighbors({}, {}, {})
             server.elev_angle = 0
 
         with globals.lock_access_edge_servers_topology:
-            # Salvo solo i satelliti che appartengono alla topologia
+            # only keep the satellites that belong to the topology
             globals.edge_servers_topology = list(servers_in_dome_updated.values())
 
         new_edge_servers = list(servers_in_dome_updated.values()) + list(old_edge_servers.values())
 
-        #Trovo i nuovi acc_points
+        #find the new access points
         counter_acc_found = 0
         for server in new_edge_servers:
             if counter_acc_found < config["access_point"]:
@@ -533,17 +533,17 @@ def loadConfiguration_simple(env, data_configurations):
         #     globals.config_index += 1
         return new_edge_servers, global_access_point
     else:
-        # Caricamento iniziale della configurazione
+        # Initial Configuration Load
         configuration = data_configurations["configurations"][globals.config_index]
         
-        # Costruisci i server iniziali
+        # Set up the initial servers
         edge_servers, neighbors_SAT, list_acc_point = build_EdgeServer_from_config(env, configuration)
 
-        # Stampa per debug
+        # debug output
         #print(f"Configurazione iniziale caricata. Totale server: {len(edge_servers)}")
         server_dict = {server.name: server for server in edge_servers}
 
-        # Aggiungiamo i vicini per ogni elemento
+        # add the neighbors for each element
         for server in edge_servers:
             neighbors = neighbors_SAT[server.name]
 
@@ -553,7 +553,7 @@ def loadConfiguration_simple(env, data_configurations):
                                     globals.rnd.uniform(config["available_bandwidth"]["min"],
                                                    config["available_bandwidth"]["max"]))
 
-        #Trovo i nuovi acc_points
+        #find the new access points
         counter_acc_found = 0
         for server in edge_servers:
             if counter_acc_found < config["access_point"]:
@@ -573,26 +573,26 @@ def loadConfiguration_simple(env, data_configurations):
 
 def loadConfiguration(env, data_configurations, OGMs_tables):
     """
-    Carica una configurazione dal file e aggiorna la lista edge_servers senza sostituirla completamente.
+    Load a configuration from a file and update the `edge_servers` list without completely replacing it.
 
     Returns:
         None
     """
-    global_access_point = []    # futuri acc_points
+    global_access_point = []    # future acc_points
     if globals.config_index > 0:
         #print("#" * 30)
         configuration = data_configurations["configurations"][globals.config_index]
         OGMs_table_single_config = OGMs_tables[str(globals.config_index)]
         globals.ist_in_conf = string_to_skyfield_time(configuration["time"])
 
-        print("Aggiornato il Tempo Globale: ", globals.ist_in_conf.utc_strftime('%Y-%m-%d %H:%M:%S'))
+        print("Global Time Updated: ", globals.ist_in_conf.utc_strftime('%Y-%m-%d %H:%M:%S'))
         #print(f'Conf: {globals.config_index} | time : {configuration["time"]}')
 
-        # Costruisci i nuovi server dalla configurazione
+        # Build the new servers based on the configuration
         new_servers, new_neighbors, acc_point = build_EdgeServer_from_config(env,
                      configuration, OGMs_table_single_config)
 
-        # Aggiorna i server esistenti o aggiunge nuovi server se non presenti.
+        # Update existing servers or add new servers if none exist.
         intersection, old_edge_servers, new_edge_servers = update_servers(new_servers, acc_point)
 
         server = {**intersection, **new_edge_servers}
@@ -600,17 +600,17 @@ def loadConfiguration(env, data_configurations, OGMs_tables):
         update_counters_dictionary(server, globals.initial_server_counter,
                                    globals.different_server_counter, globals.other_server_counter)  # Aggiorno i dizionari dei nuovi aggiunti
 
-        # Stampa per debug
+        # debug output
         #print(f"Configurazione aggiornata. Totale server: {len({**intersection, **new_edge_servers, **old_edge_servers})}")
 
-        # Aggiorno i vicini
+        # let the neighbors know
         servers_in_dome_updated = update_servers_neighbors({**intersection, **new_edge_servers},
-                                                           new_neighbors)  # Aggiorno i vicini per i server nell'intersection e i nuovi aggiunti
+                                                           new_neighbors)  # updating the neighbors for the servers at the intersection and the newly added ones
         
-        # Pulisco i dizionari che riguardano i vicini dei server tramontati
+        # cleaning up the dictionaries related to the neighbors of the decommissioned servers
         [server.update_neighbors({}, {}, {}) for server in old_edge_servers.values()]  
         
-        # ! Ridefinisco le Labels dei Tasks
+        # ! redefining the task labels
         for server in old_edge_servers.values():
             if len(server.tasks)>0:
                 print(f"{server.name} SERVER OUT OF BUFF")
@@ -619,12 +619,12 @@ def loadConfiguration(env, data_configurations, OGMs_tables):
                     print(f"\t{t.id} : {t.label}")
 
         with globals.lock_access_edge_servers_topology:
-            # Salvo solo i satelliti che appartengono alla topologia
+            # I'll only keep the satellites that belong to the topology
             globals.edge_servers_topology = list(servers_in_dome_updated.values())
 
         new_edge_servers = list(servers_in_dome_updated.values()) + list(old_edge_servers.values())
 
-        #Trovo i nuovi acc_points
+        #I find the new access points
         counter_acc_found = 0
         for server in new_edge_servers:
             if counter_acc_found < config["access_point"]:
@@ -643,20 +643,20 @@ def loadConfiguration(env, data_configurations, OGMs_tables):
         #     globals.config_index += 1
         return new_edge_servers, global_access_point
     else:
-        print(f"SIMULAZIONE INIZIATA conf {globals.config_index}")
-        # Caricamento iniziale della configurazione
+        print(f"SIMULATION STARTED conf {globals.config_index}")
+        # Initial Configuration Load
         configuration = data_configurations["configurations"][globals.config_index]
         OGMs_table_single_config = OGMs_tables[str(globals.config_index)]
 
-        # Costruisci i server iniziali
+        # Set up the initial servers
         edge_servers, neighbors_SAT, list_acc_point = build_EdgeServer_from_config(env,
                      configuration, OGMs_table_single_config)
 
-        # Stampa per debug
+        # debug output
         #print(f"Configurazione iniziale caricata. Totale server: {len(edge_servers)}")
         server_dict = {server.name: server for server in edge_servers}
 
-        # Aggiungiamo i vicini per ogni elemento
+        # Let's add the neighbors for each element
         for server in edge_servers:
             neighbors = neighbors_SAT[server.name]
 
@@ -665,7 +665,7 @@ def loadConfiguration(env, data_configurations, OGMs_tables):
                 server.add_neighbor(neighbor_server, 1, n["latency"],
                                     globals.rnd.uniform(config["available_bandwidth"]["min"],
                                                    config["available_bandwidth"]["max"]))
-        #Trovo i nuovi acc_points
+        #I find the new access points
         counter_acc_found = 0
         for server in edge_servers:
             if counter_acc_found < config["access_point"]:
@@ -685,7 +685,7 @@ def loadConfiguration(env, data_configurations, OGMs_tables):
 
 def updateTaskValue(data_configurations):
     index_config = 0
-    lifes = []  # Lista per salvare le vite dei satelliti
+    lifes = []  # A List to Save the Lives of Satellites
     configurations = data_configurations["configurations"]   
     #print(f"Analisi {len(configurations)} configurazioni :")
     for i in range(len(configurations)):
@@ -714,7 +714,7 @@ def updateTaskValue(data_configurations):
     return min(lifes_value), max(lifes_value), sum(lifes_value) / len(lifes_value)
 
 def string_to_skyfield_time(time_str):
-    # Converte la stringa in oggetto datetime
+    # Converts the string to a datetime object
     dt = datetime.fromisoformat(time_str)
     ts = load.timescale()
     return ts.from_datetime(dt)
@@ -727,4 +727,4 @@ def get_global_mode() -> AccPointMode:
     elif ap_selection == "optimal":
         return AccPointMode.OPTIMAL
     else:
-        sys.exit("Modalità di Access Point non valida nel file di configurazione.")
+        sys.exit("Invalid Access Point mode in the configuration file.")

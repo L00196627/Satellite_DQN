@@ -1,3 +1,12 @@
+"""
+A development test for the DQN pipeline that uses sample task and candidate data to check that state creation,
+action masking, action selection, replay memory, and training all work correctly.
+
+It is not a COSMOS performance experiment and its rewards/loss values should not be treated as dissertation results.
+"""
+
+
+
 from DQN_data_Translator import build_dqn_state, STATE_SIZE, ACTION_SIZE
 
 

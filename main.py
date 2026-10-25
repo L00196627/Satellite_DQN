@@ -50,6 +50,9 @@ import time
 
 from utils import colorize
 
+import DQN_simulation
+from DQN_agent import load_model, save_model
+
 simulation_dataset = []
 
 
@@ -215,7 +218,7 @@ if __name__ == "__main__":
                     result_sink={},
                     allow_retry=False
                 ))
-            elif str(config.get("SearchNode", "")).upper() == "ERT":
+            elif str(config.get("SearchNode", "")).upper() in ("ERT" , "DQN"):
                 # ERT Mode: Use simulation.TaskAssignment
                 env.process(simulation.TaskAssignment(
                     env,
@@ -274,6 +277,8 @@ if __name__ == "__main__":
         complete_sim_solver = "DTS-APopt"
     elif req_dist == "OrbitAware" and ap_selection == "optimal" and solver == "ERT":
         complete_sim_solver = "OrbitAware"
+    elif req_dist == "OrbitAware" and ap_selection == "optimal" and solver == "DQN":
+        complete_sim_solver = ("DQN")
     elif req_dist == "DTS-base" and ap_selection == "optimal" and solver == "ILP":
         complete_sim_solver = "ILP"
     else:
@@ -340,7 +345,14 @@ if __name__ == "__main__":
     env.process(data_collector(env, interval=2, start_time=100, end_time=200))
 
     # 6) Running the Simulation
+    if str(config.get("SearchNode", "")).upper() == "DQN":
+        load_model()
+
     env.run(config['simulation_duration'])
+
+    if str(config.get("SearchNode", "")).upper() == "DQN":
+        DQN_simulation.finish_episode()
+        save_model()
 
     # Specify the name of the output file
     output_folder = "Generated_datasets"
@@ -430,12 +442,12 @@ if __name__ == "__main__":
                 writer.writerow([
                     tid, task_type, "Completed", arr_sys, arr_q, start_t, end_t,
                     ex_t, service_t, time_in_system, time_q, sel_srv, hops,
-                    r_hops,  # <-- Valore Routing Hops
+                    r_hops,  # <--  Routing Hops value
                     qlen, tranfer_t, image_size, exec_set,
                     eps_cpu, eps_net, eps_tot, srv_rem_energy, remaining_percent, "N/A",
-                    r_init_time,  # <-- Valore Routing Init Time
-                    r_end_time,  # <-- Valore Routing End Time
-                    r_duration  # <-- Valore Routing Duration
+                    r_init_time,  # <--  Routing Init Time value
+                    r_end_time,  # <--  Routing End Time value
+                    r_duration  # <--  Routing Duration value
                 ])
 
             # rejected tasks
@@ -523,12 +535,12 @@ if __name__ == "__main__":
                     "N/A",  # Num Hops
                     "N/A",  # Num Hops Routing
                     total_residual_count,  # Queue length
-                    "N/A",  # transfer_time (Corretto)
-                    "N/A",  # Image_Size_MB (Corretto)
-                    False,  # Exec_after_set (Corretto)
-                    0.0,  # Energy_CPU [J] (Corretto)
-                    0.0,  # Energy_NET [J] (Corretto)
-                    0.0,  # Energy_TOTAL [J] (Corretto)
+                    "N/A",  # transfer_time (Correct)
+                    "N/A",  # Image_Size_MB (Correct)
+                    False,  # Exec_after_set (Correct)
+                    0.0,  # Energy_CPU [J] (Correct)
+                    0.0,  # Energy_NET [J] (Correct)
+                    0.0,  # Energy_TOTAL [J] (Correct)
                     srv.energy,  # Remaining_energy [J]
                     remaining_percent,  # Remaining_energy [%]
                     "In Queue at End",  # Rejection Reason
@@ -577,7 +589,7 @@ if __name__ == "__main__":
         f"AT_{atime}_CPU_{cpu_mean}.csv"
     )
 
-    print(f"\nSalvataggio statistiche energetiche e conteggi task su: {csv_energy_stats}")
+    print(f"\nSaving energy statistics and task counts to: {csv_energy_stats}")
 
     try:
         # Get the initial energy from the config to calculate the percentage
@@ -699,9 +711,9 @@ if __name__ == "__main__":
                 ])
 
     except Exception as e:
-        print(f"ERRORE during writing the energy stats file: {e}")
+        print(f"ERROR during writing the energy stats file: {e}")
 
     # real-time execution time calculation
     end_time_simulation_real = time.time()
     duration_simulation = end_time_simulation_real - start_time_simulation_real
-    print(f"Tempo di esecuzione REALE della simulazione {duration_simulation:.4f} secondi")
+    print(f"ACTUAL simulation runtime {duration_simulation:.4f} seconds")

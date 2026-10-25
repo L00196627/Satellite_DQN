@@ -219,7 +219,7 @@ class EdgeServer:
              DeadLine, exec_after_set, eps_cpu, eps_net, total_energy, self.energy)
         )
 
-        print(f"[Task {task_id}] Task eseguito su {self.name} {self.elev_angle} degrees | "
+        print(f"[Task {task_id}] Task performed on {self.name} {self.elev_angle} degrees | "
               f"CPU={eps_cpu:.4f}J, NET={eps_net:.4f}J, TOTAL={total_energy:.4f}J, "
               f"Remaining={self.energy:.2f}J")
 

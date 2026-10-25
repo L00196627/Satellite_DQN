@@ -1,3 +1,18 @@
+"""
+This module converts live COSMOS scheduling information into a fixed-size numeric state for the neural network.
+For each candidate SEN, it includes CPU and network waiting time, transfer time, orbital sunset, elevation angle,
+expected completion time, energy, and whether the candidate exists.
+
+It also includes task information such as CPU requirement, deadline, data size, and bandwidth.
+
+The current design supports up to 50 candidate SENs.
+"""
+
+
+
+
+import math
+
 # maximum number of candidate SENs observed for an Access Point SEN
 MAX_CANDIDATES = 50
 
@@ -23,6 +38,14 @@ STATE_SIZE = (
 ACTION_SIZE = MAX_CANDIDATES
 
 
+MAX_DEADLINE = 10.0
+MAX_ENERGY = 100000.0
+MAX_ELEVATION = 90.0
+MAX_ORBITAL_TIME = 300.0
+MAX_DATA_BYTES = 500_000_000.0
+MAX_BANDWIDTH = 100_000_000.0
+
+
 def build_dqn_state(
         server_metrics,
         d_cpu,
@@ -38,34 +61,56 @@ def build_dqn_state(
     which candidate SEN positions are currently valid
     """
 
-    # prevent more candidates being supplied than the
-    # neural network was designed to handle
+    # prevent more candidates being supplied than the neural network was designed to handle
+
     if len(server_metrics) > MAX_CANDIDATES:
         raise ValueError(
             f"Received {len(server_metrics)} candidates, "
             f"but MAX_CANDIDATES is {MAX_CANDIDATES}."
         )
 
-    # preserve the order of the candidate SENs
-    # DQN action 0 corresponds to candidate 0  etc
-    ordered_metrics = list(server_metrics)
+    # preserve the order of the candidate SENs DQN action 0 corresponds to candidate 0  etc
 
-    state = []
+    valid_metrics = []
 
-    # initially assume that none of the 50 actions are valid
-    mask = [False] * MAX_CANDIDATES
-
-    # add the features for each real candidate SEN
-    for i, metric in enumerate(ordered_metrics):
-
-        state.extend([
+    for metric in server_metrics:
+        candidate_values = [
             metric["waiting_cpu"],
             metric["waiting_net"],
             metric["transfer_time"],
             metric["orbitalSunset"],
             metric["elevation_angle"],
             metric["expected_completion_time"],
-            metric["energy"],
+            metric["energy"]
+        ]
+
+        if all(
+                isinstance(value, (int, float)) and math.isfinite(value)
+                for value in candidate_values
+        ):
+            valid_metrics.append(metric)
+
+    if not valid_metrics:
+        raise ValueError("No finite DQN candidate SENs available.")
+
+    ordered_metrics = valid_metrics
+
+    state = []
+
+    # initially assume that none of the 50 actions are valid
+    mask = [False] * MAX_CANDIDATES
+
+    # add the features for each real candidate SEN divided by max values for normalization
+    for i, metric in enumerate(ordered_metrics):
+
+        state.extend([
+            metric["waiting_cpu"]/MAX_DEADLINE,
+            metric["waiting_net"]/MAX_DEADLINE,
+            metric["transfer_time"]/MAX_DEADLINE,
+            metric["orbitalSunset"]/MAX_ORBITAL_TIME,
+            metric["elevation_angle"]/MAX_ELEVATION,
+            metric["expected_completion_time"]/MAX_DEADLINE,
+            metric["energy"]/MAX_ENERGY,
 
             # 1 means that this candidate position contains a real SEN
             1.0
@@ -87,12 +132,18 @@ def build_dqn_state(
         )
     )
 
-    # add information describing the task itself
+    # add information describing the task itself divided by max values for normalization
     state.extend([
-        d_cpu,
-        deadline,
-        data_bytes_global,
-        bw_Bps_global
+        d_cpu/MAX_DEADLINE,
+        deadline/MAX_DEADLINE,
+        data_bytes_global/MAX_DATA_BYTES,
+        bw_Bps_global/MAX_BANDWIDTH
     ])
+
+    for i, value in enumerate(state):
+        if not math.isfinite(value):
+            raise ValueError(
+                f"Invalid DQN state value at index {i}: {value}"
+            )
 
     return state, mask, ordered_metrics

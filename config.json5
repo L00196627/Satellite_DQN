@@ -41,7 +41,7 @@
   },
   DTS: true,
   AP_selection: "optimal",
-  SearchNode: "ERT",
+  SearchNode: "DQN",
   SEN_selection: "maxSunset",
   required_ram: {
     min: 50,

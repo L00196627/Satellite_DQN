@@ -32,31 +32,31 @@ class Task:
         self.ttl = 20  # Time to live in HOP
         self.hop = 0  # num_hop
         self.arrived = False  # Arrived Flag
-        self.routingInitTime = routingInitTime  # Tempo di partenza
-        self.routingEndTime = None  # Tempo di fine
+        self.routingInitTime = routingInitTime  # Departure time
+        self.routingEndTime = None  # End Time
         self.label = 'ON_SIMULATION'  # Failure Label
 
-        self.task_type = task_type  # Es: "CPU_Intensive"
-        self.weight = image_size  # Dimensione Immagine (MB)
+        self.task_type = task_type  # Is: "CPU_Intensive"
+        self.weight = image_size  # Image Size (MB)
 
-        self.source = current_node  # Nodo di partenza
+        self.source = current_node  # Starting Node
 
-        self.current_node = current_node  # Server sul quale si trova
-        self.dest_node = dest_node  # Nodo di destinazione
+        self.current_node = current_node  # Server on which it is located
+        self.dest_node = dest_node  # Destination node
 
         # self.visited: set[str] = {current_node}# Set Server precedente
-        self.visited = set()  # Set Server precedente
-        self.visited.add(current_node)  # Aggiungo il primo server (il nome!)
+        self.visited = set()  # Previous Server Set
+        self.visited.add(current_node)  # add the first server (the name!)
 
-        self.algorithms_used = {}  # Dizionario degli algoritmi utilizzati
+        self.algorithms_used = {}  # ossary of Algorithms Used
 
-        self.hop_History = [current_node]  # Lista di satelliti sui quali sono stato
+        self.hop_History = [current_node]  # List of satellites I've been on
 
         # DSR
         self.source_DSR = current_node
         self.routeRequestIst = None  # Timestamp start route Request
         self.RouteReply = False  # Bool allow reply
-        self.selected_route = []  # Lista percorso da seguire
+        self.selected_route = []  # List of steps to follow
     
     def __str__(self):
         """
@@ -67,7 +67,7 @@ class Task:
             return f"|ID:{self.id}\t|Hop:{self.hop}|Init:{self.routingInitTime}|Endt:{self.routingEndTime}|dur:{duration}"
 
     def add_algorithm(self, algo_name: str):
-        """Incrementa il contatore per l'algoritmo usato"""
+        """Increase the counter for the algorithm used"""
         if algo_name not in self.algorithms_used:
             self.algorithms_used[algo_name] = 0
         self.algorithms_used[algo_name] += 1
@@ -81,13 +81,13 @@ class Task:
 
 
 def _win_longpath(p: str) -> str:
-    """Rende il path compatibile con i percorsi lunghi di Windows usando il prefisso \\?\\."""
+    """It makes the path compatible with long Windows paths by using the \\?\\ prefix."""
     if os.name != "nt":
         return p
-    # normalizza/assolutizza
+    # normalize/absolutize
     p = os.path.abspath(p)
     if p.startswith("\\\\?\\"):
-        return p  # già esteso
+        return p  # already extended
     if p.startswith("\\\\"):        # UNC -> \\?\UNC\server\share\...
         return "\\\\?\\UNC" + p[1:]
     return "\\\\?\\" + p
@@ -95,12 +95,12 @@ def _win_longpath(p: str) -> str:
 
 
 def assign_resolution(required_ram, required_disk):
-    # Normalizzazione pesata
+    # Weighted Normalization
     norm_ram = required_ram / config["required_ram"]["max"]
     norm_disk = required_disk / config["required_disk"]["max"]
     weight = 0.5 * norm_ram + 0.5 * norm_disk
 
-    # Mappatura del peso a una categoria
+    # Mapping Weight to a Category
     if weight <= 0.25:
         category = "Low"
     elif weight <= 0.5:
@@ -116,7 +116,7 @@ def assign_resolution(required_ram, required_disk):
     min_byte = dim_to_Byte(min_value["dim"], min_value["value"])
     max_byte = dim_to_Byte(max_value["dim"], max_value["value"])
 
-    resolution_value = globals.rnd.randint(min_byte, max_byte)  # Valore di Ritorno in Byte
+    resolution_value = globals.rnd.randint(min_byte, max_byte)  # Return Value in Bytes
     return category, resolution_value
 
 
@@ -153,8 +153,8 @@ def byte_to_dim(byte_value):
 
 def get_algo_percentages(t):
     """
-    Calcola le percentuali di utilizzo degli algoritmi per un Task.
-    Ritorna un dizionario {algoritmo: percentuale}.
+    Calculate the usage percentages of the algorithms for a task.
+    Returns a dictionary {algorithm: percentage}.
     """
     algo_perc = {}
     total = sum(t.algorithms_used.values())
@@ -176,17 +176,17 @@ def findAlgorithm():
         return "DSR"
     else:
         sys.exit(
-            f"C'è un problema con gli algoritmi: DSR:{DSR} GREEDY:{GREEDY} BATMAN:{BATMAN}")
+            f"There's a problem with algorithms: DSR:{DSR} GREEDY:{GREEDY} BATMAN:{BATMAN}")
 
 
 def makeSummary(folder, TArr, TExp, Tsob, ToS):
     file = f"SUMMARY[{findAlgorithm()}]_Rout_interval_{str(config.get('Routing_Interval')).replace(',', '.')}.csv"
 
-    # 1) Assicurati che la cartella esista (usando il path assoluto)
+    # 1) Make sure the folder exists (using the absolute path)
     folder_abs = os.path.abspath(folder)
     os.makedirs(folder_abs, exist_ok=True)
 
-    # 2) Costruisci path e applica il prefisso long-path su Windows
+    # 2) Create a path and apply the “long-path” prefix on Windows
     path = os.path.join(folder_abs, file)
     path = _win_longpath(path)
 
@@ -206,7 +206,7 @@ def makeSummary(folder, TArr, TExp, Tsob, ToS):
 def convert_task_list_in_dict(task_list : list) -> dict:
     result = {}
     for elem in task_list:
-        # supporta sia oggetti con attributo .id che dict con chiave 'id'
+        # supports both objects with an .id attribute and dictionaries with an ‘id’ key
         if isinstance(elem, dict):
             key = elem.get("id")
         else:
@@ -216,7 +216,7 @@ def convert_task_list_in_dict(task_list : list) -> dict:
             continue
 
         result[key] = elem
-        # stampa lo stato corrente del dizionario dopo ogni inserimento
+        # Print the current state of the dictionary after each entry
     return result
 
 def get_routing_hop_tasks(task_id: int) -> int:
@@ -225,14 +225,14 @@ def get_routing_hop_tasks(task_id: int) -> int:
 
 def generate_Tasks_Status(csv_filename, folder):
     """
-        Questa funzione salva in un file CSV le informazioni sui Task
+        This feature saves task information to a CSV file
     """
 
     total_tasks = []
-    print(f"TASK GLOBALI {len(globals.gbl_tasks)} \n", )
+    print(f"GLOBAL TASKS {len(globals.gbl_tasks)} \n", )
 
     for t in globals.gbl_tasks:
-        # Se il task ha un tempo di fine routing, calcola la durata e arrotonda i valori
+        # If the task has a routing end time, calculate the duration and round the values
         if t.routingEndTime is not None:
             durata = round(t.routingEndTime - t.routingInitTime, 2)
             routing_end = round(t.routingEndTime, 2)
@@ -240,27 +240,27 @@ def generate_Tasks_Status(csv_filename, folder):
             durata = None
             routing_end = None
 
-        # Crea una lista con le informazioni principali del task
+        # Create a list containing the key details of the task
         elem = [
-            t.id,  # ID del task
-            t.current_node,  # Nodo corrente
-            t.hop,  # Numero di hop
-            t.label,  # Etichetta di stato
-            t.task_type,  # Categoria di task_type
-            round(t.routingInitTime, 2),  # Tempo di inizio routing arrotondato
-            routing_end,  # Tempo di fine routing arrotondato (se presente)
-            durata,  # Durata del routing (se presente)
+            t.id,  # Task ID
+            t.current_node,  # Current Node
+            t.hop,  # Number of hops
+            t.label,  # Status Label
+            t.task_type,  # Task_type category
+            round(t.routingInitTime, 2),  # Rounded routing start time
+            routing_end,  # Rounded end-of-routing time (if applicable)
+            durata,  # Routing Duration (if applicable)
             get_algo_percentages(t)
         ]
-        # Aggiungi le informazioni del task alla lista totale
+        # Add the task information to the overall list
         total_tasks.append(elem)
 
-    # FASE DI SORTING
+    # SORTING PHASE
     total_tasks.sort(key=lambda x: x[0])
 
     TArr, TExp, Tsob, ToS = 0, 0, 0, 0
 
-    # FASE DI STAMPA FORMATTATA
+    # FORMATTED PRINT PHASE
     print(f"TOT TASK IN ROUTING SYS: {len(total_tasks)}\n")
     print(
         "id     | CurrentNode          | Hop | Label           | Resolution    | Start Routing (s) | End Routing (s) | duration      | Algo")
@@ -290,21 +290,21 @@ def generate_Tasks_Status(csv_filename, folder):
 
     makeSummary(folder, TArr, TExp, Tsob, ToS)  # Genera il Summary
 
-    print()  # Riga vuota alla fine per separare dall'output successivo
+    print()  # An empty line at the end to separate it from the next output
 
-    # FASE DI SCRITTURA CSV
-        # FASE DI SCRITTURA CSV
+    # CSV WRITING PHASE
+
     headers = [
         "TaskID", "CurrentNode", "Hop", "Label", "Resolution",
         "RoutingInitTime", "RoutingEndTime", "Duration", "Algorithms"
     ]
 
-    # Assicura l'esistenza della cartella del CSV (uso path assoluto)
+    # Ensure that the CSV folder exists (use the absolute path)
     csv_dir = os.path.abspath(os.path.dirname(csv_filename) or ".")
     os.makedirs(csv_dir, exist_ok=True)
 
     csv_path = os.path.join(csv_dir, os.path.basename(csv_filename))
-    csv_path = _win_longpath(csv_path)  # <--- prefisso long-path su Windows
+    csv_path = _win_longpath(csv_path)  # <--- Long-path prefix on Windows
 
     with open(csv_path, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
