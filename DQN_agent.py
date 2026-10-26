@@ -71,6 +71,9 @@ Transition = namedtuple(
     )
 )
 
+# stores the transitions that the agent observes, allowing the data to be reused later.
+# By sampling from it randomly, the transitions that build up a batch are decorrelated.
+# It has been shown that this greatly stabilizes and improves the DQN training procedure.
 
 class ReplayMemory(object):
 

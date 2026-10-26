@@ -103,6 +103,18 @@ def build_dqn_state(
     # add the features for each real candidate SEN divided by max values for normalization
     for i, metric in enumerate(ordered_metrics):
 
+
+        # candidate features:
+        # waiting_cpu - CPU queue delay
+        # waiting_net - network queue delay
+        # transfer_time - task transfer time
+        # orbitalSunset - remaining visibility time
+        # elevation_angle - satellite elevation
+        # expected_completion_time - predicted finish time
+        # energy - remaining SEN energy
+        # 1.0 - candidate exists
+
+
         state.extend([
             metric["waiting_cpu"]/MAX_DEADLINE,
             metric["waiting_net"]/MAX_DEADLINE,
@@ -111,8 +123,6 @@ def build_dqn_state(
             metric["elevation_angle"]/MAX_ELEVATION,
             metric["expected_completion_time"]/MAX_DEADLINE,
             metric["energy"]/MAX_ENERGY,
-
-            # 1 means that this candidate position contains a real SEN
             1.0
         ])
 
@@ -133,6 +143,11 @@ def build_dqn_state(
     )
 
     # add information describing the task itself divided by max values for normalization
+    # task features:
+    # d_cpu - CPU demand
+    # deadline - task deadline
+    # data_bytes_global - task data size
+    # bw_Bps_global - available bandwidth
     state.extend([
         d_cpu/MAX_DEADLINE,
         deadline/MAX_DEADLINE,

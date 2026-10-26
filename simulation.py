@@ -327,7 +327,7 @@ def TaskAssignment(env, selected_server, task_id, image_size,
 
 def cpu_demand(task_type):
     """
-    Ritorna d_cpu (secondi) in base al tipo task.
+    Returns d_cpu (seconds) based on the task type.
     """
     if task_type == "Generic_Service":
         params = config["CPU_timeout"].get("gen", config["CPU_timeout"]["default"])
@@ -423,17 +423,17 @@ def _filter_and_select_best_server(server_metrics, deadline, task_id, task_type,
 
     distribution = config.get("request_distribution", {}).get("distribution", "")
     if distribution in ("DTS-base", "DTS-AP optimal"):
-        print(f'[{task_id}] Filtro euristico: DTS-TMAX')
+        print(f'[{task_id}] heuristic filter: DTS-TMAX')
         server_metrics_sorted = [m for m in sorted_servers if m['expected_completion_time'] < deadline]
     else:
-        print(f'[{task_id}] Filtro euristico: OrbitAware')
+        print(f'[{task_id}] heuristic filter: OrbitAware')
         server_metrics_sorted = [
             m for m in sorted_servers
             if m['expected_completion_time'] < deadline and m['expected_completion_time'] < m['orbitalSunset']
         ]
 
     if not server_metrics_sorted:
-        print(f"[Task {task_id}] Nessun server rimasto dopo i filtri (deadline/sunset).")
+        print(f"[Task {task_id}] No servers remain after the filters(deadline/sunset).")
         server_selected.record_rejected_task(task_id, task_type, arrival_time_system, image_size, reason, d_cpu)
         return None, reason
 
@@ -564,7 +564,7 @@ def task(env, task_id, server, initial_server_counter, different_server_counter,
     task_type = task_data['type']
     image_size = task_data['image_size']
 
-    print(f"---> Task {task_id} (Type: {task_type}) arriva in {arrival_time_system:.2f}")
+    print(f"---> Task {task_id} (Type: {task_type}) arrives in {arrival_time_system:.2f}")
 
     policy = config.get("SearchNode", "ERT")
 
@@ -584,9 +584,7 @@ def task(env, task_id, server, initial_server_counter, different_server_counter,
         yield from ILP_simulation.SearchNode_ILP_Hybrid_v2(*search_node_args)
 
     elif policy == "DQN":
-        yield from DQN_simulation.SearchNode_DQN_v1(
-            *search_node_args
-        )
+        yield from DQN_simulation.SearchNode_DQN_v1(*search_node_args)
 
     else:
         if policy != "ERT":

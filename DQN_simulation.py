@@ -24,13 +24,19 @@ pending_transitions = {}
 last_decision_task_id = None
 
 
-def try_store_transition(task_id):
+def _try_store_transition(task_id):
     transition = pending_transitions.get(task_id)
 
     if transition is None:
         return
 
-    # We cannot train until both reward and next_state are known
+    if transition["reward"] is None or transition["next_state"] is None:
+        print(
+            f"[DQN PENDING] Task {task_id} waiting | "
+            f"Reward known: {transition['reward'] is not None} | "
+            f"Next state known: {transition['next_state'] is not None}"
+        )
+
     if transition["reward"] is None:
         return
 
