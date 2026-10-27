@@ -23,7 +23,7 @@ pending_transitions = {}
 # tracks the most recent DQN scheduling decision
 last_decision_task_id = None
 
-
+#tracking whether next state is pending or completed
 def _try_store_transition(task_id):
     transition = pending_transitions.get(task_id)
 
@@ -91,7 +91,7 @@ def attach_next_state(state, valid_action_mask):
         valid_action_mask
     )
 
-    try_store_transition(last_decision_task_id)
+    _try_store_transition(last_decision_task_id)
 
 
 def record_reward(task_id, reward):
@@ -102,7 +102,7 @@ def record_reward(task_id, reward):
 
     transition["reward"] = float(reward)
 
-    try_store_transition(task_id)
+    _try_store_transition(task_id)
 
 
 
@@ -407,7 +407,7 @@ def finish_episode():
 
         # The transition now has everything required
         # for replay memory.
-        try_store_transition(task_id)
+        _try_store_transition(task_id)
 
     pending_transitions.clear()
     last_decision_task_id = None
