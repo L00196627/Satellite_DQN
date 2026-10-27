@@ -27,55 +27,6 @@ Routing is treated separately from task placement. For controlled experiments, t
 
 ---
 
-##  Architecture layout
-
-main.py
-   |
-   |-- loads configuration
-   |-- builds/loads topology
-   |-- creates the simulation environment
-   |-- starts task generation
-   |-- loads/saves DQN model when DQN is selected
-   |
-   v
-simulation.py
-   |
-   |-- generates tasks
-   |-- calculates candidate SEN metrics
-   |-- selects SearchNode policy
-   |
-   +---- ERT / Heuristic
-   |
-   +---- ILP ----> ILP_simulation.py
-   |                  |
-   |                  +----> sec_ilp_snapshot_v3.py
-   |
-   +---- DQN ----> DQN_simulation.py
-                     |
-                     |-- gathers COSMOS task/candidate data
-                     |-- manages task execution and rewards
-                     |-- manages pending transitions
-                     |
-                     +----> DQN_data_Translator.py
-                     |         |
-                     |         +----> builds normalized DQN state
-                     |         +----> builds valid action mask
-                     |
-                     +----> DQN_agent.py
-                               |
-                               |-- selects action
-                               |-- stores replay experiences
-                               |-- trains policy network
-                               |
-                               +----> chosen SEN
-                                         |
-                                         v
-                              normal COSMOS task execution
-
-After a target SEN is selected, the normal COSMOS task assignment and execution logic continues.
-
----
-
 ## Main Components
 
 ### `main.py`
